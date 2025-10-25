@@ -2,7 +2,71 @@
 # Airflow 3.1.0 Kubernetes Architecture
 
 Diagrama conceptual del stack desplegado en el namespace `airflow`.
-
+Namespace: airflow
+┌──────────────────────────────────────────────┐
+│ airflow (Namespace) │
+│ │
+│ ┌───────────────────────────────┐ │
+│ │ API Server (Deployment) │ │
+│ │ airflow-api-server │ │
+│ │ envFrom: │ │
+│ │ - airflow-config (ConfigMap) │ │
+│ │ - airflow-secrets (Secret) │ │
+│ └─────────────┬─────────────────┘ │
+│ │ │
+│ ┌───────────▼───────────┐ │
+│ │ Scheduler (Deployment) │ │
+│ │ airflow-scheduler │ │
+│ │ envFrom: │ │
+│ │ - airflow-config │ │
+│ │ - airflow-secrets │ │
+│ └───────────┬───────────┘ │
+│ │ │
+│ ┌──────▼───────┐ │
+│ │ Worker │ │
+│ │ StatefulSet │ │
+│ │ airflow-worker│ │
+│ │ envFrom: │ │
+│ │ - airflow-config │
+│ │ - airflow-secrets │
+│ │ REDIS_PASSWORD (Secret) │
+│ │ AIRFLOW__CELERY__BROKER_URL │
+│ │ AIRFLOW__CELERY__RESULT_BACKEND │
+│ └──────┬───────┘ │
+│ │ │
+│ ┌──────▼─────────┐ │
+│ │ Triggerer │ │
+│ │ StatefulSet │ │
+│ │ airflow-triggerer │ │
+│ │ envFrom: │ │
+│ │ - airflow-config │ │
+│ │ - airflow-secrets│ │
+│ └──────┬───────────┘ │
+│ │ │
+│ ┌──────▼───────────┐ │
+│ │ Redis Broker │ │
+│ │ StatefulSet │ │
+│ │ airflow-redis-0 │ │
+│ │ Password: airflow-redis-password │
+│ └──────┬───────────┘ │
+│ │ │
+│ ┌──────▼───────────┐ │
+│ │ PostgreSQL │ │
+│ │ StatefulSet │ │
+│ │ airflow-postgresql-0│ │
+│ │ Username/Password: airflow-secrets │
+│ │ PVC: postgresql-data │
+│ └───────────────────┘ │
+│ │
+│ ┌───────────────────────────────┐ │
+│ │ DAG Processor (Deployment) │ │
+│ │ airflow-dag-processor │ │
+│ │ envFrom: │ │
+│ │ - airflow-config │ │
+│ │ - airflow-secrets │ │
+│ │ Volumes: PVC dags/logs │ │
+│ └───────────────────────────────┘ │
+└──────────────────────────────────────────────┘
 
 ---
 
