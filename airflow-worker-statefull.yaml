@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: airflow-worker
+  namespace: airflow
+spec:
+  serviceName: airflow-worker
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-worker
+  template:
+    metadata:
+      labels:
+        app: airflow-worker
+    spec:
+      serviceAccountName: airflow
+      containers:
+      - name: worker
+        image: apache/airflow:3.1.0
+        command: ["airflow", "celery", "worker"]
+
+        env:
+          # Fernet key (desde Secret)
+          - name: AIRFLOW__CORE__FERNET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: airflow-fernet-key-secrets
+                key: AIRFLOW__CORE__FERNET_KEY
+
+          # Redis password (desde Secret dedicado)
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: airflow-redis-password
+                key: redis-password
+
+          # DB password (desde Secret principal)
+          - name: AIRFLOW_DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: airflow-postgres-secrets
+                key: password
+          - name: AIRFLOW__API__SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: airflow-secret-key-secrets
+                key: AIRFLOW__API__SECRET_KEY
+          
+          - name: AIRFLOW__API_AUTH__JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: airflow-secret-key-secrets
+                key: AIRFLOW__API_AUTH__JWT_SECRET
+
+          # Habilitar loging
+          - name: AIRFLOW__LOGGING__LOGGING_LEVEL 
+            value: "DEBUG"
+
+          # Celery broker y backend
+          - name: AIRFLOW__CELERY__BROKER_URL
+            value: "redis://:$(REDIS_PASSWORD)@airflow-redis:6379/0"
+          - name: AIRFLOW__CELERY__RESULT_BACKEND
+            value: "db+postgresql://airflow:$(AIRFLOW_DATABASE_PASSWORD)@airflow-postgresql:5432/airflow"
+          
+          # Concurrency fijo para evitar OOM
+          - name: AIRFLOW__CELERY__WORKER_CONCURRENCY
+            value: "16"
+
+          # API Server
+          - name: AIRFLOW__API__API_BASE_URL
+            value: http://airflow-api-server:8080/v1/api
+
+          # Path exacto para Execution API
+          - name: AIRFLOW__CORE__EXECUTION_API_SERVER_URL
+            value: http://airflow-api-server:8080/execution
+          
+          - name: AIRFLOW__WORKERS__EXECUTION_API_TIMEOUT
+            value: "30"  # Segundos; para cargas altas
+
+          #Limpieza de memoria
+          - name: AIRFLOW__CORE__KILLED_TASK_CLEANUP_TIME
+            value: "1800"
+
+        envFrom:
+          # Variables adicionales desde los Secrets y ConfigMap
+          - secretRef:
+              name: airflow-fernet-key-secrets  # FERNET_KEY
+          - configMapRef:
+              name: airflow-config
+
+        ports:
+        - containerPort: 8793
+          name: worker
+
+        volumeMounts:
+        - name: dags
+          mountPath: /opt/airflow/dags
+        - name: logs
+          mountPath: /opt/airflow/logs
+
+        livenessProbe:
+          tcpSocket:
+            port: 8793
+          initialDelaySeconds: 60
+          periodSeconds: 60
+          timeoutSeconds: 30
+          failureThreshold: 5
+
+        readinessProbe:
+          tcpSocket:
+            port: 8793
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "500m"
+          limits:
+            memory: "8Gi"
+            cpu: "1000m"
+
+      volumes:
+      - name: dags
+        persistentVolumeClaim:
+          claimName: airflow-dags
+      - name: logs
+        persistentVolumeClaim:
+          claimName: airflow-logs

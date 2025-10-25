@@ -1,0 +1,80 @@
+# dag-processor.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-dag-processor
+  namespace: airflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-dag-processor
+  template:
+    metadata:
+      labels:
+        app: airflow-dag-processor
+    spec:
+      serviceAccountName: airflow
+      containers:
+      - name: dag-processor
+        image: apache/airflow:3.1.0
+        command: ["airflow", "dag-processor"]
+
+        env:
+          # 🔐 Fernet Key (desde Secret principal unificado)
+          - name: AIRFLOW__CORE__FERNET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: airflow-fernet-key-secrets
+                key: AIRFLOW__CORE__FERNET_KEY
+
+          # 🔐 Redis password (desde Secret dedicado)
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: airflow-redis-password
+                key: redis-password 
+          
+          - name: AIRFLOW__API__SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: airflow-secret-key-secrets
+                key: AIRFLOW__API__SECRET_KEY
+                
+          - name: AIRFLOW__API_AUTH__JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: airflow-secret-key-secrets
+                key: AIRFLOW__API_AUTH__JWT_SECRET
+
+          # 🧠 Celery Broker URL (Redis con autenticación)
+          - name: AIRFLOW__CELERY__BROKER_URL
+            value: "redis://:$(REDIS_PASSWORD)@airflow-redis:6379/0"
+
+        envFrom:
+          - configMapRef:
+              name: airflow-config
+          - secretRef:
+              name: airflow-postgres-secrets
+
+        volumeMounts:
+        - name: dags
+          mountPath: /opt/airflow/dags
+        - name: logs
+          mountPath: /opt/airflow/logs
+
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+
+      volumes:
+      - name: dags
+        persistentVolumeClaim:
+          claimName: airflow-dags
+      - name: logs
+        persistentVolumeClaim:
+          claimName: airflow-logs

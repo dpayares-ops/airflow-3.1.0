@@ -1,0 +1,14 @@
+---
+# postgresql.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-postgresql
+  namespace: airflow
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: airflow-postgresql
+  clusterIP: None

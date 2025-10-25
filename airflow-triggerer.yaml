@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: airflow-triggerer
+  namespace: airflow
+spec:
+  serviceName: airflow-triggerer
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-triggerer
+  template:
+    metadata:
+      labels:
+        app: airflow-triggerer
+    spec:
+      serviceAccountName: airflow
+      containers:
+      - name: triggerer
+        image: apache/airflow:3.1.0
+        #command: ["airflow", "triggerer"]
+        command: ["airflow", "triggerer"]
+
+        ports:
+        - containerPort: 8795  
+          name: triggerer
+
+        env:
+          # 🔐 Fernet key (desde Secret principal)
+          - name: AIRFLOW__CORE__FERNET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: airflow-fernet-key-secrets
+                key: AIRFLOW__CORE__FERNET_KEY
+
+          # 🔐 Redis password (desde Secret dedicado)
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: airflow-redis-password
+                key: redis-password
+          
+          - name: AIRFLOW__API__SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: airflow-secret-key-secrets
+                key: AIRFLOW__API__SECRET_KEY
+                
+          - name: AIRFLOW__API_AUTH__JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: airflow-secret-key-secrets
+                key: AIRFLOW__API_AUTH__JWT_SECRET
+
+          # 🧠 Broker URL (Redis con auth)
+          - name: AIRFLOW__CELERY__BROKER_URL
+            value: "redis://:$(REDIS_PASSWORD)@airflow-redis:6379/0"
+
+        envFrom:
+          # Configuración base y credenciales
+          - configMapRef:
+              name: airflow-config
+
+        volumeMounts:
+        - name: logs
+          mountPath: /opt/airflow/logs
+
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+      volumes:
+      - name: logs
+        persistentVolumeClaim:
+          claimName: airflow-logs

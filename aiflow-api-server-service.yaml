@@ -1,0 +1,16 @@
+---
+# api-server.yaml (corregido)
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-api-server
+  namespace: airflow
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30080
+    name: http
+  selector:
+    app: airflow-api-server

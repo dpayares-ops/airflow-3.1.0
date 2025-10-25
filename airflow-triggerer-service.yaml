@@ -1,0 +1,15 @@
+---
+# triggerer.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-triggerer
+  namespace: airflow
+spec:
+  clusterIP: None
+  ports:
+  - port: 8795
+    name: triggerer
+  selector:
+    app: airflow-triggerer
+

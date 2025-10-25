@@ -1,0 +1,13 @@
+# redis.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-redis
+  namespace: airflow
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+  selector:
+    app: airflow-redis
+  clusterIP: None

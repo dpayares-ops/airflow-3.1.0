@@ -1,0 +1,25 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-statsd-config
+  namespace: airflow
+data:
+  mappings.yml: |
+    mappings:
+    - match: "airflow.*.start"
+      name: airflow_job_start
+      labels:
+        job: $1
+    - match: "airflow.*.end"
+      name: airflow_job_end
+      labels:
+        job: $1
+    - match: "airflow.dag_processing.last_duration.*"
+      name: airflow_dag_processing_duration
+      labels:
+        dag_file: $1
+    - match: "airflow.scheduler.*"
+      name: airflow_scheduler_$1
+    - match: "airflow.*"
+      name: airflow_$1

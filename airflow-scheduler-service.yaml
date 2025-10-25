@@ -1,0 +1,15 @@
+# scheduler-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-scheduler-api
+  namespace: airflow
+spec:
+  selector:
+    app: airflow-scheduler
+  ports:
+  - port: 8794
+    targetPort: 8794
+    protocol: TCP
+    name: scheduler-api
+  type: ClusterIP
