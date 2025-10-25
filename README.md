@@ -95,3 +95,42 @@ Namespace: airflow
 Si querés, puedo hacer una **versión “color real” usando Mermaid**, que GitHub renderiza en Markdown con cajas y flechas conectando cada componente. Esto se ve mucho más profesional en la documentación.  
 
 ¿Querés que haga esa versión con Mermaid?
+
+                     ┌──────────────────────┐
+                     │  Airflow API Server  │
+                     │  (UI + REST API)     │
+                     │  airflow-api-server  │
+                     └─────────┬──────────┘
+                               │
+                ┌──────────────┴──────────────┐
+                │                             │
+      ┌─────────▼─────────┐         ┌─────────▼─────────┐
+      │  Airflow Scheduler │         │  DAG Processor     │
+      │  airflow-scheduler │         │  airflow-dag-processor │
+      └─────────┬─────────┘         └─────────┬─────────┘
+                │                             │
+                │                             │
+          ┌─────▼─────┐                 ┌─────▼─────┐
+          │ Celery    │                 │ Logs /    │
+          │ Workers   │                 │ DAGs PVC  │
+          │ airflow-  │                 │ (Shared)  │
+          │ worker-0  │                 └───────────┘
+          └─────┬─────┘
+                │
+                │
+       ┌────────▼────────┐
+       │  Triggerer       │
+       │ airflow-triggerer│
+       └────────┬────────┘
+                │
+        ┌───────▼────────┐
+        │ Redis Broker    │
+        │ airflow-redis-0 │
+        └────────┬────────┘
+                 │
+          ┌──────▼───────┐
+          │ PostgreSQL    │
+          │ airflow-postgresql-0 │
+          └──────────────┘
+
+
