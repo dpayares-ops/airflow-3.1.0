@@ -119,4 +119,4 @@ Namespace: airflow
      │ [purple] PVC: postgresql-data            │
      └───────────────────┘
 
-                
+ ---               
