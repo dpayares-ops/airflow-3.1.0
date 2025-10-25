@@ -1,7 +1,7 @@
 # airflow-3.1.0
 # Airflow 3.1.0 Kubernetes Architecture
-
 Diagrama conceptual del stack desplegado en el namespace `airflow`.
+---
 Namespace: airflow
                      ┌──────────────────────┐
                      │  Airflow API Server  │
