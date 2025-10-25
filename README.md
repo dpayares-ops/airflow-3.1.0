@@ -16,7 +16,7 @@ Airflow 3.10 está basado en una arquitectura **modular y escalable**, utilizand
 | **Dag Processor**  | Procesa los DAGs, analiza los archivos Python y los registra en la DB.    |
 | **Triggerer**      | Maneja triggers asíncronos como sensores y tareas dependientes de eventos.|
 | **Database**       | Almacena el estado de las tareas, DAGs, conexiones y variables.           |
-| **Webserver**      | UI de Airflow para monitoreo, administración y ejecución de DAGs.         |
+
 
 ---
 
