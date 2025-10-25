@@ -64,5 +64,59 @@ Namespace: airflow
 5. **DAG Processor:** sincroniza DAGs desde **PVC** para todos los pods.
 
 ---
+                    ┌──────────────────────────────┐
+                    │  API SERVER (Deployment)     │
+                    │  airflow-api-server          │
+                    │  [green] envFrom:            │
+                    │   - airflow-config (ConfigMap)│
+                    │   - airflow-secrets (Secret) │
+                    └─────────────┬────────────────┘
+                                  │
+            ┌─────────────────────┴─────────────────────┐
+            │                                           │
+ ┌──────────▼──────────┐                    ┌───────────▼───────────┐
+ │ Scheduler (Deployment)│                  │ DAG Processor (Deployment) │
+ │ airflow-scheduler     │                  │ airflow-dag-processor      │
+ │ [green] envFrom:      │                  │ [green] envFrom:          │
+ │  - airflow-config     │                  │  - airflow-config         │
+ │  - airflow-secrets    │                  │  - airflow-secrets        │
+ └──────────┬───────────┘                  └───────────┬────────────┘
+            │                                            │
+            │                                            │
+     ┌──────▼───────┐                           ┌────────▼────────┐
+     │  Worker      │                           │ Logs/DAG PVC    │
+     │ StatefulSet  │                           │ (PersistentVol) │
+     │ airflow-worker│                           │ [purple]        │
+     │ [blue] envFrom:│                          │                │
+     │ - airflow-config│                          └────────────────┘
+     │ - airflow-secrets│
+     │ REDIS_PASSWORD (Secret) │
+     │ AIRFLOW__CELERY__BROKER_URL │
+     │ AIRFLOW__CELERY__RESULT_BACKEND │
+     └──────┬───────┘
+            │
+     ┌──────▼────────┐
+     │ Triggerer      │
+     │ StatefulSet    │
+     │ airflow-triggerer │
+     │ [blue] envFrom:   │
+     │ - airflow-config  │
+     │ - airflow-secrets │
+     └──────┬───────────┘
+            │
+     ┌──────▼───────────┐
+     │ Redis Broker     │
+     │ StatefulSet      │
+     │ airflow-redis-0  │
+     │ [blue] Password: airflow-redis-password (Secret) │
+     └──────┬───────────┘
+            │
+     ┌──────▼───────────┐
+     │ PostgreSQL       │
+     │ StatefulSet      │
+     │ airflow-postgresql-0 │
+     │ [blue] Username/Password: airflow-secrets │
+     │ [purple] PVC: postgresql-data            │
+     └───────────────────┘
 
                 
