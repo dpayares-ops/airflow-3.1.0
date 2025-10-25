@@ -22,7 +22,7 @@ Airflow 3.10 está basado en una arquitectura **modular y escalable**, utilizand
 
 ## 2. Flujo de ejecución
 
-```mermaid
+```
 flowchart TD
     A[DAG Folder] --> B[Dag Processor]
     B --> C[Database]
