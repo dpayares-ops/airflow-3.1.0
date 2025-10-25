@@ -1,44 +1,38 @@
-# airflow-3.1.0
-# Airflow 3.1.0 Kubernetes Architecture
-Diagrama conceptual del stack desplegado en el namespace `airflow`.
+# Flujo de Airflow 3.10
+
+Este documento describe el flujo de trabajo y la arquitectura de **Apache Airflow 3.10** en nuestro entorno.
+
 ---
-Namespace: airflow
-                     ┌──────────────────────┐
-                     │  Airflow API Server  │
-                     │  (UI + REST API)     │
-                     │  airflow-api-server  │
-                     └─────────┬──────────┘
-                               │
-                ┌──────────────┴──────────────┐
-                │                             │
-      ┌─────────▼─────────┐         ┌─────────▼─────────┐
-      │  Airflow Scheduler │         │  DAG Processor     │
-      │  airflow-scheduler │         │  airflow-dag-processor │
-      └─────────┬─────────┘         └─────────┬─────────┘
-                │                             │
-                │                             │
-          ┌─────▼─────┐                 ┌─────▼─────┐
-          │ Celery    │                 │ Logs /    │
-          │ Workers   │                 │ DAGs PVC  │
-          │ airflow-  │                 │ (Shared)  │
-          │ worker-0  │                 └───────────┘
-          └─────┬─────┘
-                │
-                │
-       ┌────────▼────────┐
-       │  Triggerer       │
-       │ airflow-triggerer│
-       └────────┬────────┘
-                │
-        ┌───────▼────────┐
-        │ Redis Broker    │
-        │ airflow-redis-0 │
-        └────────┬────────┘
-                 │
-          ┌──────▼───────┐
-          │ PostgreSQL    │
-          │ airflow-postgresql-0 │
-          └──────────────┘
+
+## 1. Arquitectura General
+
+Airflow 3.10 está basado en una arquitectura **modular y escalable**, utilizando principalmente los siguientes componentes:
+
+| Componente         | Descripción                                                                 |
+|-------------------|-----------------------------------------------------------------------------|
+| **Scheduler**      | Monitorea los DAGs y planifica las tareas pendientes en la base de datos.  |
+| **Worker**         | Ejecuta las tareas en paralelo según lo programado por el Scheduler.       |
+| **API Server**     | Exposición RESTful para integración con otros servicios y ejecución remota de DAGs. |
+| **Dag Processor**  | Procesa los DAGs, analiza los archivos Python y los registra en la DB.    |
+| **Triggerer**      | Maneja triggers asíncronos como sensores y tareas dependientes de eventos.|
+| **Database**       | Almacena el estado de las tareas, DAGs, conexiones y variables.           |
+| **Webserver**      | UI de Airflow para monitoreo, administración y ejecución de DAGs.         |
+
+---
+
+## 2. Flujo de ejecución
+
+```mermaid
+flowchart TD
+    A[DAG Folder] --> B[Dag Processor]
+    B --> C[Database]
+    C --> D[Scheduler]
+    D --> E[Worker]
+    E --> C
+    D --> F[Triggerer]
+    F --> E
+    G[API Server] --> H[Worker / Scheduler]
+    I[Webserver] --> C
 
 
 ---
